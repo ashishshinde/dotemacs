@@ -28,6 +28,25 @@
 ;;; General setting
 (savehist-mode 1)
 
+;; unicode handling
+(prefer-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+;; backwards compatibility as default-buffer-file-coding-system
+;; is deprecated in 23.2.
+(if (boundp 'buffer-file-coding-system)
+    (setq-default buffer-file-coding-system 'utf-8)
+  (setq default-buffer-file-coding-system 'utf-8))
+
+;; Treat clipboard input as UTF-8 string first; compound text next, etc.
+(setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
+(add-hook 'term-exec-hook
+          (function
+           (lambda ()
+             (set-buffer-process-coding-system 'utf-8-unix 'utf-8-unix))))
+
+
 ;;; UNDO - REDO
 ;; increase the undo limit
 (setq undo-limit 10000)
@@ -133,6 +152,13 @@ Version 2015-04-09"
 
 ;; Turn on the advice    
 (ad-activate 'query-replace-repeat)
+
+
+;; set up anzu
+(anzu-mode +1)
+(global-anzu-mode +1)
+(global-set-key (kbd "M-%") 'anzu-query-replace)
+(global-set-key (kbd "C-M-%") 'anzu-query-replace-regexp)
 
 ;; parenthesis matching
 (show-paren-mode 1)
@@ -259,7 +285,9 @@ Version 2015-04-09"
   (global-set-key (kbd "<C-next>") 'multi-term-next)
   (global-set-key (kbd "<C-prior>") 'multi-term-prev)
   (setq multi-term-buffer-name "term"
-        multi-term-program "/bin/zsh"))
+        multi-term-program "/bin/zsh")
+  (setq multi-term-scroll-to-bottom-on-output t)
+  )
 
 (when (require 'term nil t) ; only if term can be loaded..
   (setq term-bind-key-alist
@@ -347,11 +375,40 @@ Use `winstack-push' and
 (global-set-key (kbd "C-c C-u") 'winstack-push)
 (global-set-key (kbd "C-c C-o") 'winstack-pop)
 
+;;; be transparent. good advice in general as well
+;;(set-frame-parameter (selected-frame) 'alpha '(<active> [<inactive>]))
+(set-frame-parameter (selected-frame) 'alpha '(95 85))
+(add-to-list 'default-frame-alist '(alpha 95 85))
+
+(eval-when-compile (require 'cl))
+ (defun toggle-transparency ()
+   (interactive)
+   (if (/=
+        (cadr (frame-parameter nil 'alpha))
+        100)
+       (set-frame-parameter nil 'alpha '(100 100))
+     (set-frame-parameter nil 'alpha '(95 85))))
+(global-set-key (kbd "C-c t") 'toggle-transparency)
+
+
+;; revert / reload file without confirmation
+(defun revert-buffer-no-confirm ()
+  "Revert buffer without confirmation."
+  (interactive) (revert-buffer t t))
+
+(global-set-key (kbd "C-M-z") 'revert-buffer-no-confirm)
+
+
 ;-------------------------------------------------------
 ;;; C/C++ related
 (require 'cc-mode)
 
 (add-hook 'c-mode-common-hook '(lambda () (c-set-style "bsd")))
+
+
+;;; srspeedbar related
+(require 'sr-speedbar)
+(global-set-key (kbd "s-b") 'sr-speedbar-toggle)
 
 ;;; activate ecb
 (require 'ecb)
@@ -523,7 +580,18 @@ Use `winstack-push' and
 ;; function args
 (require 'function-args)
 (fa-config-default)
-(define-key c-mode-base-map (kbd "C-M-j") 'moo-jump-local)
+
+(eval-after-load "function-args"
+  '(let ((map function-args-mode-map))
+
+	(define-key map (kbd "C-M-j") 'moo-jump-local)
+(define-key map  [(control tab)] 'moo-complete)
+(define-key map  [(control tab)] 'moo-complete)
+(define-key map (kbd "M-o")  'fa-show)
+(define-key map (kbd "M-o")  'fa-show)
+
+  ))
+
 
 ;; function name in header
 (which-function-mode 1)
@@ -532,6 +600,7 @@ Use `winstack-push' and
 ;; git related
 (require 'git)
 (require 'git-blame)
+(setq vc-follow-symlinks nil)
 
 
 ;;-------------------------------------------------------------  
@@ -552,3 +621,31 @@ Use `winstack-push' and
  ;; If there is more than one, they won't work right.
  )
 
+;;--------------------------------------------------------------------
+;; Javascript related
+(add-hook 'js-mode-hook 'js2-minor-mode)
+(add-hook 'js2-mode-hook 'ac-js2-mode)
+
+(setq js2-highlight-level 3)
+
+(eval-after-load "js2-mode"
+  '(progn
+     (setq js2-missing-semi-one-line-override t)
+     (setq-default js2-basic-offset 2)))
+
+;; tern
+(autoload 'tern-mode "tern.el" nil t)
+(add-hook 'js-mode-hook (lambda () (tern-mode t)))
+
+
+;;--------------------------------------------------------------------
+;; Guess style
+
+(autoload 'guess-style-set-variable "guess-style" nil t)
+(autoload 'guess-style-guess-variable "guess-style")
+(autoload 'guess-style-guess-all "guess-style" nil t)
+
+
+;;--------------------------------------------------------------------
+;; Json mode
+(setq auto-mode-alist (cons '("\\.json\\'" . json-mode) auto-mode-alist))
