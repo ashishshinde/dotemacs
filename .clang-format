@@ -1,0 +1,10 @@
+﻿---
+BasedOnStyle: Mozilla
+AllowShortBlocksOnASingleLine: 'false'
+AllowShortIfStatementsOnASingleLine: 'false'
+AllowShortLoopsOnASingleLine: 'false'
+IndentWidth: '8'
+PenaltyBreakString: '10000'
+UseTab: Always
+
+...

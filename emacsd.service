@@ -1,0 +1,12 @@
+[Unit]
+Description=Runs emacs server as a daemon
+Documentation=man:foo(1)
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/emacs --daemon
+Restart=on-abort
+User=ashish
+
+[Install]
+WantedBy=multi-user.target

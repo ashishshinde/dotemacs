@@ -28,6 +28,8 @@
 ;;; General setting
 (savehist-mode 1)
 
+(setq column-number-mode t)
+
 ;; unicode handling
 (prefer-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
@@ -219,6 +221,10 @@ Version 2015-04-09"
   (if (looking-at "{") (forward-char -1))
   (while (not (looking-at "{")) (backward-char 1))
   )
+
+;; rainbow delimiters
+(require 'rainbow-delimiters)
+(add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
 
 (global-set-key (kbd "M-)")           (quote move-forward-paren))
 (global-set-key (kbd "M-(")           (quote move-backward-paren))
@@ -649,3 +655,55 @@ Use `winstack-push' and
 ;;--------------------------------------------------------------------
 ;; Json mode
 (setq auto-mode-alist (cons '("\\.json\\'" . json-mode) auto-mode-alist))
+
+;;--------------------------------------------------------------------
+;; Gradle mode
+(require 'gradle-mode)
+(gradle-mode 1)
+
+
+;;--------------------------------------------------------------------
+;; Crontab
+(require 'with-editor)
+
+(defun crontab-e ()
+    (interactive)
+    (with-editor-async-shell-command "crontab -e"))
+
+;;--------------------------------------------------------------------
+;; deal with large files
+(defun my-find-file-check-make-large-file-read-only-hook ()
+  "If a file is over a given size, make the buffer read only."
+  (when (> (buffer-size) (* 1024 1024))
+    (setq buffer-read-only t)
+    (buffer-disable-undo)
+    (fundamental-mode)))
+
+(add-hook 'find-file-hook 'my-find-file-check-make-large-file-read-only-hook)
+
+;;--------------------------------------------------------------------
+;; clojure related
+(add-hook 'clojure-mode-hook 'turn-on-eldoc-mode)
+(setq nrepl-popup-stacktraces nil)
+(add-to-list 'same-window-buffer-names "<em>nrepl</em>")
+
+;; ac-nrepl (Auto-complete for the nREPL)
+(require 'ac-nrepl)
+(add-hook 'cider-mode-hook 'ac-nrepl-setup)
+(add-hook 'cider-repl-mode-hook 'ac-nrepl-setup)
+(add-to-list 'ac-modes 'cider-mode)
+(add-to-list 'ac-modes 'cider-repl-mode)
+
+;; Poping-up contextual documentation
+(eval-after-load "cider"
+  '(define-key cider-mode-map (kbd "C-c C-d") 'ac-nrepl-popup-doc))
+
+(add-hook 'clojure-mode-hook 'paredit-mode)
+
+;; Show parenthesis mode
+(show-paren-mode 1)
+
+(global-set-key [f8] 'other-frame)
+(global-set-key [f7] 'paredit-mode)
+(global-set-key [f9] 'cider-jack-in)
+(global-set-key [f11] 'speedbar)
