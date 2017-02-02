@@ -30,6 +30,21 @@
 
 (setq column-number-mode t)
 
+(set-default-font "Noto Mono-11")
+
+;; remove trailing whitespace
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+
+;; allow using ctrl-z to suspend in multi-term shells.
+(defun term-send-ctrl-z ()
+  "Allow using ctrl-z to suspend in multi-term shells."
+  (interactive)
+  (term-send-raw-string ""))
+
+(add-hook 'term-mode-hook
+       (lambda ()
+          (add-to-list 'term-bind-key-alist '("C-z z" . term-send-ctrl-z))))
+
 ;; unicode handling
 (prefer-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
@@ -84,7 +99,7 @@
 
 ;; don't show scrollbars
 (scroll-bar-mode -1)
-(menu-bar-mode -1) 
+(menu-bar-mode -1)
 (tool-bar-mode -1)
 
 ;; start fullscreen
@@ -93,6 +108,9 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   (quote
+	("6914241d1ce18ca2487d0d5af56b79397e5c39b311495301d2f25aa91dd1497b" "2d7e4feac4eeef3f0610bf6b155f613f372b056a2caae30a361947eab5074716" default)))
  '(ecb-options-version "2.40")
  '(initial-frame-alist (quote ((fullscreen . maximized)))))
 
@@ -138,12 +156,12 @@ Version 2015-04-09"
 (ad-activate 'isearch-repeat)
 
 ;; wrap query replace around
-; advise the new version to repeat the search after it 
-;; finishes at the bottom of the buffer the first time:    
-(defadvice query-replace-repeat 
-  (around replace-wrap 
+; advise the new version to repeat the search after it
+;; finishes at the bottom of the buffer the first time:
+(defadvice query-replace-repeat
+  (around replace-wrap
           (FROM-STRING TO-STRING &optional DELIMITED START END))
-  "Execute a query-replace, wrapping to the top of the buffer 
+  "Execute a query-replace, wrapping to the top of the buffer
    after you reach the bottom"
   (save-excursion
     (let ((start (point)))
@@ -152,7 +170,7 @@ Version 2015-04-09"
       (ad-set-args 4 (list (point-min) start))
       ad-do-it)))
 
-;; Turn on the advice    
+;; Turn on the advice
 (ad-activate 'query-replace-repeat)
 
 
@@ -185,35 +203,35 @@ Version 2015-04-09"
   (interactive "P")
   (if (looking-at ")") (forward-char 1))
   (while (not (looking-at ")")) (forward-char 1))
-) 
+)
 
 (defun move-backward-paren (&optional arg)
  "Move backward parenthesis"
   (interactive "P")
   (if (looking-at "(") (forward-char -1))
   (while (not (looking-at "(")) (backward-char 1))
-) 
+)
 
 (defun move-forward-sqrParen (&optional arg)
  "Move forward square brackets"
   (interactive "P")
   (if (looking-at "]") (forward-char 1))
   (while (not (looking-at "]")) (forward-char 1))
-) 
+)
 
 (defun move-backward-sqrParen (&optional arg)
  "Move backward square brackets"
   (interactive "P")
   (if (looking-at "[[]") (forward-char -1))
   (while (not (looking-at "[[]")) (backward-char 1))
-) 
+)
 
 (defun move-forward-curlyParen (&optional arg)
  "Move forward curly brackets"
   (interactive "P")
   (if (looking-at "}") (forward-char 1))
   (while (not (looking-at "}")) (forward-char 1))
-  ) 
+  )
 
 (defun move-backward-curlyParen (&optional arg)
  "Move backward curly brackets"
@@ -286,6 +304,16 @@ Version 2015-04-09"
 
 
 ;; multi-term
+(defadvice ansi-term (after advise-ansi-term-coding-system)
+    (set-buffer-process-coding-system 'utf-8-unix 'utf-8-unix))
+(ad-activate 'ansi-term)
+
+(add-hook 'term-exec-hook
+          (function
+           (lambda ()
+             (set-buffer-process-coding-system 'utf-8-unix 'utf-8-unix))))
+
+
 (when (require 'multi-term nil t)
   (global-set-key (kbd "<f5>") 'multi-term)
   (global-set-key (kbd "<C-next>") 'multi-term-next)
@@ -327,7 +355,7 @@ Version 2015-04-09"
                                          (+ start 8))))))
         ;; Delete this command from MESSAGE.
         (setq message (replace-match "" t t message))
- 
+
         (cond ((= command-code ?c)
                (setq term-ansi-at-dir argument))
               ((= command-code ?h)
@@ -340,7 +368,7 @@ Version 2015-04-09"
               ((= command-code ?x)
                (save-excursion
                  (find-file argument))))))
- 
+
     (when (and term-ansi-at-host term-ansi-at-dir term-ansi-at-user)
       (setq buffer-file-name
             (format "%s@%s:%s" term-ansi-at-user term-ansi-at-host term-ansi-at-dir))
@@ -383,8 +411,8 @@ Use `winstack-push' and
 
 ;;; be transparent. good advice in general as well
 ;;(set-frame-parameter (selected-frame) 'alpha '(<active> [<inactive>]))
-(set-frame-parameter (selected-frame) 'alpha '(95 85))
-(add-to-list 'default-frame-alist '(alpha 95 85))
+;; (set-frame-parameter (selected-frame) 'alpha '(95 85))
+;; (add-to-list 'default-frame-alist '(alpha 95 85))
 
 (eval-when-compile (require 'cl))
  (defun toggle-transparency ()
@@ -519,11 +547,11 @@ Use `winstack-push' and
 (semantic-mode 1)
 ; let's define a function which adds semantic as a suggestion backend to auto complete
 ; and hook this function to c-mode-common-hook
-(defun my:add-semantic-to-autocomplete() 
+(defun my:add-semantic-to-autocomplete()
   (add-to-list 'ac-sources 'ac-source-semantic)
 )
 (add-hook 'c-mode-common-hook 'my:add-semantic-to-autocomplete)
-; turn on ede mode 
+; turn on ede mode
 (global-ede-mode 1)
 ; create a project for our program.
 ;(ede-cpp-root-project "my project" :file "~/demos/my_program/src/main.cpp"
@@ -533,13 +561,17 @@ Use `winstack-push' and
 (global-semanticdb-minor-mode 1)
 (global-semantic-idle-scheduler-mode 1)
 
+(require 'riti)
+(setq-default riti-on-save nil)
+(setq-default riti-cfg-file "/home/ashish/.riti.xml")
+(global-set-key [C-M-tab] 'riti)
 (require 'clang-format)
-(global-set-key [C-M-tab] 'clang-format-region)
+
 
 ;; gtags related
 (require 'gtags)
 
-(defun gtags-update-single(filename)  
+(defun gtags-update-single(filename)
   "Update Gtags database for changes in a single file"
   (interactive)
   (start-process "update-gtags" "update-gtags" "bash" "-c" (concat "cd " (gtags-root-dir) " ; gtags --single-update " filename )))
@@ -579,7 +611,7 @@ Use `winstack-push' and
 
 ;; gdb related
 (eval-after-load "gud"
-  '(progn 
+  '(progn
      (define-key gud-mode-map (kbd "<up>") 'comint-previous-input)
      (define-key gud-mode-map (kbd "<down>") 'comint-next-input)))
 
@@ -609,14 +641,14 @@ Use `winstack-push' and
 (setq vc-follow-symlinks nil)
 
 
-;;-------------------------------------------------------------  
+;;-------------------------------------------------------------
 ;; aerospike specific
 (setq inhibit-splash-screen t)
 (setq default-directory "/home/ashish/workspace/" )
 
 ;; file search
 (global-set-key [C-M-F] 'find-grep)
-(setq grep-find-command 
+(setq grep-find-command
       "grep -rnHI --exclude=\\*.{hg,log,o,a} --exclude=\\..\\* --exclude=\\#.\\* --include=\\*.{c,cpp,h} --include=-e 'pattern' /home/ashish/workspace/*")
 
 (setenv "CLIENTREPO" "/home/ashish/workspace/aerospike-client-c/")
@@ -707,3 +739,5 @@ Use `winstack-push' and
 (global-set-key [f7] 'paredit-mode)
 (global-set-key [f9] 'cider-jack-in)
 (global-set-key [f11] 'speedbar)
+(put 'downcase-region 'disabled nil)
+(put 'upcase-region 'disabled nil)
